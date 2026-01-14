@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>កំពូលអ្នកផឹក NengzX</title>
+<style>
+    body {
+        background-color: #141820;
+        color: white;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        padding: 20px;
+    }
+    h1 {
+        color: #00ffff;
+    }
+    .frame {
+        background-color: #1a1f29;
+        border: 3px solid #00ffff;
+        border-radius: 15px;
+        padding: 20px;
+        display: inline-block;
+        margin-bottom: 20px;
+    }
+    input, select, button, textarea {
+        padding: 10px;
+        margin: 10px 0;
+        font-size: 16px;
+        border-radius: 8px;
+        border: none;
+        outline: none;
+    }
+    input, select {
+        width: 200px;
+    }
+    button {
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    button:hover {
+        opacity: 0.8;
+    }
+    textarea {
+        background-color: #1a1f29;
+        color: white;
+        width: 500px;
+        height: 200px;
+        font-family: "Consolas", monospace;
+        font-size: 16px;
+        resize: none;
+    }
+</style>
+</head>
+<body>
+
+<h1>កំពូលអ្នកផឹក NengzX</h1>
+
+<div class="frame">
+    <input type="text" id="loan" placeholder="Loan (100k - 10m)">
+    <br>
+    <select id="term">
+        <option value="12">12</option>
+        <option value="24" selected>24</option>
+        <option value="36">36</option>
+        <option value="48">48</option>
+        <option value="60">60</option>
+    </select>
+    <br>
+    <button style="background-color:#00ffaa;color:#000;" onclick="compute()">Calculate</button>
+    <button style="background-color:#ff0099;color:#fff;" onclick="copyResult()">Copy Result</button>
+</div>
+
+<textarea id="result" readonly></textarea>
+
+<br>
+<button style="background-color:#ffaa00;color:#000;" onclick="window.location.href='admin.html'">
+    Admin
+</button>
+
+<script>
+// === Loan Table ===
+const loan_table = {
+    100000:  {12: 8633.33, 24: 4666.67, 36: 3077.78, 48: 2383.33, 60: 1966.67},
+    150000:  {12: 12950.00, 24: 6700.00, 36: 4616.67, 48: 3575.00, 60: 2950.00},
+    200000:  {12: 17266.67, 24: 8933.33, 36: 6155.56, 48: 4766.67, 60: 3933.33},
+    250000:  {12: 21583.33, 24: 11166.67, 36: 7694.44, 48: 5958.33, 60: 4916.67},
+    300000:  {12: 25900.00, 24: 13400.00, 36: 9233.33, 48: 7150.00, 60: 5900.00},
+    350000:  {12: 30216.67, 24: 15633.33, 36: 10772.22, 48: 8341.67, 60: 6883.33},
+    400000:  {12: 34533.33, 24: 17866.67, 36: 12311.11, 48: 9533.33, 60: 7866.67},
+    450000:  {12: 38850.00, 24: 20100.00, 36: 13850.00, 48: 10725.00, 60: 8850.00},
+    500000:  {12: 43166.67, 24: 22333.33, 36: 15388.89, 48: 11916.67, 60: 9833.33},
+    550000:  {12: 47483.33, 24: 24566.67, 36: 16927.78, 48: 13108.33, 60: 10816.67},
+    600000:  {12: 51800.00, 24: 26800.00, 36: 18466.67, 48: 14300.00, 60: 11800.00},
+    650000:  {12: 56116.67, 24: 29033.33, 36: 20005.56, 48: 15491.67, 60: 12783.33},
+    700000:  {12: 60433.33, 24: 31266.67, 36: 21544.44, 48: 16683.33, 60: 13766.67},
+    750000:  {12: 64750.00, 24: 33500.00, 36: 23083.33, 48: 17875.00, 60: 14750.00},
+    800000:  {12: 69066.67, 24: 35733.33, 36: 24622.22, 48: 19066.67, 60: 15733.33},
+    850000:  {12: 73383.33, 24: 37966.67, 36: 26161.11, 48: 20258.33, 60: 16716.67},
+    900000:  {12: 77700.00, 24: 40200.00, 36: 27700.00, 48: 21450.00, 60: 17700.00},
+    950000:  {12: 82016.67, 24: 42433.33, 36: 29238.89, 48: 22641.67, 60: 18683.33},
+    1000000: {12: 86333.33, 24: 44666.67, 36: 30777.78, 48: 23833.33, 60: 19666.67},
+};
+
+// --- Helpers ---
+function formatAmount(v) {
+    return "₱" + v.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function parseAmount(x) {
+    x = x.toLowerCase().replace(/,/g,"");
+    if (x.endsWith("k")) x = x.slice(0,-1) + "000";
+    if (x.endsWith("m")) x = x.slice(0,-1) + "000000";
+    return parseInt(x);
+}
+
+function getMonthly(amount, term) {
+    if (loan_table[amount]) return loan_table[amount][term];
+    if (amount > 1000000) {
+        let factor = amount / 1000000;
+        return loan_table[1000000][term] * factor;
+    }
+    return 0;
+}
+
+// --- Compute ---
+function compute() {
+    const entry = document.getElementById("loan").value;
+    const term = parseInt(document.getElementById("term").value);
+    const textbox = document.getElementById("result");
+
+    let amount;
+    try {
+        amount = parseAmount(entry);
+    } catch {
+        textbox.value = "Invalid amount input";
+        return;
+    }
+
+    if (amount < 100000 || amount > 10000000) {
+        textbox.value = "Allowed: 100k - 10m";
+        return;
+    }
+
+    let monthly = getMonthly(amount, term);
+    let two = monthly * 2;
+    let withdraw = amount + two;
+
+    let text = `Loan Amount: ${formatAmount(amount)}\nTerm: ${term} months\n\nMonthly: ${formatAmount(monthly)}\nTwo-Month Payment: ${formatAmount(two)}\n\nWithdraw Amount: ${formatAmount(withdraw)}`;
+
+    textbox.value = text;
+}
+
+// --- Copy ---
+function copyResult() {
+    const textbox = document.getElementById("result");
+    textbox.select();
+    navigator.clipboard.writeText(textbox.value).then(() => {
+        alert("Result copied to clipboard!");
+    });
+}
+</script>
+
+</body>
+</html>
