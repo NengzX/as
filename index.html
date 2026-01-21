@@ -1426,6 +1426,7 @@ function copyResult(elementId) {
     });
 }
 
+// Copy all results
 function copyAllResults() {
     const results = {
         'Loan Amount': document.getElementById('rLoan').textContent,
@@ -1436,17 +1437,31 @@ function copyAllResults() {
         'Total Interest': document.getElementById('rInterest').textContent
     };
     
-    let text = 'LOAN CALCULATION\n';
-    text += '===================================\n\n';
-    
+    // Build the text
+    let text = '';
     for (const [label, value] of Object.entries(results)) {
         text += `${label}: ${value}\n`;
     }
     
-    text += '\nCalculated with 0.5% monthly interest rate\n';
-    
     navigator.clipboard.writeText(text).then(() => {
-        showNotification('All results copied!');
+        showNotification('All results copied to clipboard!');
+        
+        // Visual feedback on all copy buttons
+        const copyButtons = document.querySelectorAll('.copy-btn');
+        copyButtons.forEach(btn => {
+            btn.classList.add('copied');
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+        });
+        
+        setTimeout(() => {
+            copyButtons.forEach(btn => {
+                btn.classList.remove('copied');
+                btn.innerHTML = '<i class="far fa-copy"></i>';
+            });
+        }, 1000);
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+        showNotification('Failed to copy all results!');
     });
 }
 
